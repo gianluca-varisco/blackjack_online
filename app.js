@@ -10,13 +10,14 @@ let inviteRoomId = "";
 // Stato del Gioco (Blackjack)
 let roomStatus = 'LOBBY'; // LOBBY, BETTING, PLAYER_TURN, DEALER_TURN, ROUND_OVER
 let players = []; // { id, name, bet, score, budget, status, cards: [], isEliminated: false }
-let initialBudget = 100; // Impostato dall'host all'avvio
+let initialBudget = 100; 
 let activePlayerIndex = 0;
 let deck = [];
 let dealerCards = [];
 let dealerScore = 0;
 let isProcessingAction = false;
-let globalNotificationText = ""; // Messaggio sincronizzato per tutti i giocatori
+let globalNotificationText = ""; 
+let nextRoundTimeout = null; // Riferimento per bloccare l'avvio automatico in caso di reset dell'host
 
 window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -174,6 +175,11 @@ function setupHostConnection(connection) {
             }
             updatePlayerListUI();
             broadcast({ type: 'UPDATE_PLAYERS', players: players });
+            
+            // Se la partita è già avviata in modalità spettatore/tavolo attivo, invia lo stato
+            if (roomStatus !== 'LOBBY') {
+                sendGameState();
+            }
         }
         if (data.type === 'PLACE_BET') {
             handlePlaceBet(connection.peer, data.bet);
@@ -234,7 +240,7 @@ function startGame() {
     
     deck = createBlackjackDeck();
     roomStatus = 'BETTING';
-    globalNotificationText = ""; // Reset messaggi all'inizio del round
+    globalNotificationText = ""; 
     
     players.forEach(p => {
         p.bet = 0;
@@ -253,8 +259,36 @@ function startGame() {
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('table').style.display = 'block';
     document.getElementById('my-name-display').innerText = myNickname;
-    
     document.getElementById('host-budget-selection').style.display = 'none';
+    
+    sendGameState();
+}
+
+// FUNZIONE AGGIUNTA: Permette all'host di azzerare i punteggi e ripristinare i portafogli senza cambiare link
+function resetGameToLobby() {
+    if (!isHost) return;
+    
+    // Cancella l'eventuale timer di inizio automatico della mano successiva
+    if (nextRoundTimeout) clearTimeout(nextRoundTimeout);
+    
+    // Ottiene il nuovo budget selezionato dal menu di reset dell'host
+    const newBudget = parseInt(document.getElementById('select-reset-budget').value) || 100;
+    
+    roomStatus = 'BETTING';
+    globalNotificationText = "🔄 L'Host ha resettato il tavolo! Tutti i budget sono stati ripristinati.";
+    
+    players.forEach(p => {
+        p.budget = newBudget;
+        p.isEliminated = false;
+        p.bet = 0;
+        p.cards = [];
+        p.score = 0;
+        p.status = 'PLAYING';
+    });
+    
+    dealerCards = [];
+    dealerScore = 0;
+    isProcessingAction = false;
     
     sendGameState();
 }
@@ -291,6 +325,7 @@ function handlePlaceBet(playerId, amount) {
     if (activePlayersToBet.every(x => x.bet > 0)) {
         roomStatus = 'PLAYER_TURN';
         activePlayerIndex = 0;
+        globalNotificationText = ""; // Rimuove eventuali testi di reset all'inizio della distribuzione
         
         while (players[activePlayerIndex] && players[activePlayerIndex].isEliminated) {
             activePlayerIndex++;
@@ -425,22 +460,22 @@ function resolveRound() {
         }
     });
     
-    globalNotificationText = summary; // Carica il riepilogo nella notifica di tutti i giocatori
+    globalNotificationText = summary; 
     sendGameState();
     
     setTimeout(() => {
         const genericSurvivors = players.filter(p => !p.isEliminated);
         if (genericSurvivors.length === 0) {
-            globalNotificationText = "💥 TUTTI I GIOCATORI SONO IN BANCAROTTA! Reset totale tra 5 secondi...";
+            globalNotificationText = summary + "<br>💥 TUTTI IN BANCAROTTA! L'Host può cliccare sul pannello in alto per resettare il budget.";
             sendGameState();
-            setTimeout(() => {
-                location.reload();
-            }, 5000);
             return;
         }
         
         if (isHost) {
-            setTimeout(() => startGame(), 6000); // 6 secondi di tempo per leggere i risultati sincronizzati
+            // Avvia la prossima mano dopo 8 secondi, dando tempo all'host di resettare se preferisce
+            nextRoundTimeout = setTimeout(() => {
+                if (roomStatus === 'ROUND_OVER') startGame();
+            }, 8000);
         }
     }, 500);
 }
@@ -493,7 +528,14 @@ function syncUI() {
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('table').style.display = 'block';
     
-    // Gestione notifica globale visibile a tutti
+    // Mostra il pannello di reset amministrativo in alto SOLO all'Host e SOLO a fine round
+    const resetPanel = document.getElementById('host-reset-panel');
+    if (isHost && roomStatus === 'ROUND_OVER') {
+        resetPanel.style.display = 'block';
+    } else {
+        resetPanel.style.display = 'none';
+    }
+    
     const notifBanner = document.getElementById('global-notification');
     if (globalNotificationText && globalNotificationText.trim() !== "") {
         notifBanner.innerHTML = globalNotificationText;

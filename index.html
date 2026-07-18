@@ -10,7 +10,7 @@
 </head>
 <body>
     <div id="game-container">
-        <h1>♣️ Blackjack Casino ♥️</h1>
+        <h1>♣️ Blackjack Casino P2P ♥️</h1>
         
         <!-- Schermata di Connessione (Lobby) -->
         <div id="lobby" class="panel">
@@ -47,6 +47,17 @@
 
         <!-- Tavolo da Gioco -->
         <div id="table" class="panel" style="display: none;">
+            <!-- Controlli di Reset Amministratore (Solo Host, visibili a fine round) -->
+            <div id="host-reset-panel" class="host-admin-box" style="display: none;">
+                <label for="select-reset-budget" style="color: #ffd700; font-weight: bold;">Nuovo Budget: </label>
+                <select id="select-reset-budget" style="padding: 5px; border-radius: 4px; margin-right: 10px;">
+                    <option value="10">10 €</option>
+                    <option value="100" selected>100 €</option>
+                    <option value="1000">1000 €</option>
+                </select>
+                <button onclick="resetGameToLobby()" style="background-color: #d63031; color: white;">🔄 RICOMINCIA DA ZERO</button>
+            </div>
+
             <!-- Notifica Globale Condivisa -->
             <div id="global-notification" class="notification-banner" style="display: none;"></div>
 
