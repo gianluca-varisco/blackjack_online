@@ -34,11 +34,16 @@ h1 {
     margin: 15px 0;
     border: 1px dashed #ffd700;
 }
-.bet-buttons button {
-    margin: 5px;
-    background-color: #ffd700;
-    color: black;
-    font-size: 16px;
+
+.bet-input-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+}
+
+#input-bet-amount:focus {
+    outline: 2px solid #ffd700;
 }
 
 button {
@@ -146,7 +151,11 @@ button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
     border-radius: 8px;
     padding: 10px;
 }
-.opp-busted { border-color: #d63031; background: rgba(214, 48, 49, 0.1); }
+.opp-busted { 
+    border-color: #d63031 !important; 
+    background: rgba(214, 48, 49, 0.25) !important; 
+    opacity: 0.7;
+}
 .opp-banked { border-color: #0984e3; background: rgba(9, 132, 227, 0.1); }
 
 /* Ridimensionamento automatico carte avversari */
