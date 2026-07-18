@@ -31,6 +31,16 @@
             <div id="player-list-container" style="display:none; margin-top: 20px;">
                 <h3>Giocatori al Tavolo:</h3>
                 <ul id="player-list"></ul>
+                
+                <div id="host-budget-selection" style="margin-bottom: 15px;">
+                    <label for="select-initial-budget" style="color: #ffd700; font-weight: bold;">Budget Iniziale per tutti: </label>
+                    <select id="select-initial-budget" style="padding: 5px; border-radius: 4px;">
+                        <option value="10">10 €</option>
+                        <option value="100" selected>100 €</option>
+                        <option value="1000">1000 €</option>
+                    </select>
+                </div>
+                
                 <button id="btn-start-game" style="display:none;" onclick="startGame()">Inizia Partita</button>
             </div>
         </div>
@@ -54,11 +64,11 @@
 
                     <!-- AREA DI FASE PUNTATA (VIRTUAL BETTING) -->
                     <div id="betting-area" class="betting-box" style="display: none;">
-                        <h3>Scegli la tua Puntata Virtuale:</h3>
-                        <div class="bet-buttons">
-                            <button onclick="placeBet(10)">10 €</button>
-                            <button onclick="placeBet(100)">100 €</button>
-                            <button onclick="placeBet(1000)">1000 €</button>
+                        <h3>Inserisci la tua Puntata Virtuale:</h3>
+                        <p style="font-size: 14px; color: #aaa; margin-top: 0;">Disponibili: <span id="available-budget-display" style="color: #ffd700; font-weight: bold;">0</span>€</p>
+                        <div class="bet-input-container">
+                            <input type="number" id="input-bet-amount" min="1" step="1" placeholder="Es. 25" style="padding: 10px; border-radius: 6px; border: none; width: 120px; text-align: center; font-size: 16px;">
+                            <button onclick="submitBet()" style="margin-left: 10px;">PUNTA</button>
                         </div>
                     </div>
 

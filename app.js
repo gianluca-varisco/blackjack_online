@@ -9,7 +9,8 @@ let inviteRoomId = "";
 
 // Stato del Gioco (Blackjack)
 let roomStatus = 'LOBBY'; // LOBBY, BETTING, PLAYER_TURN, DEALER_TURN, ROUND_OVER
-let players = []; // { id, name, bet, score, status: 'PLAYING'|'STAND'|'BUST'|'BJ'|'IDLE', cards: [] }
+let players = []; // { id, name, bet, score, budget, status, cards: [], isEliminated: false }
+let initialBudget = 100; // Impostato dall'host all'avvio
 let activePlayerIndex = 0;
 let deck = [];
 let dealerCards = [];
@@ -96,7 +97,7 @@ function reconnectHost(shortId) {
         document.getElementById('btn-copy-link').style.display = 'inline-block';
         
         if (players.length === 0) {
-            players = [{ id: id, name: myNickname, bet: 0, score: 0, status: 'IDLE', cards: [] }];
+            players = [{ id: id, name: myNickname, bet: 0, score: 0, budget: 0, status: 'IDLE', cards: [], isEliminated: false }];
         } else {
             players[0].id = id;
         }
@@ -168,7 +169,7 @@ function setupHostConnection(connection) {
     connection.on('data', (data) => {
         if (data.type === 'SEND_NICKNAME') {
             if (!players.some(p => p.id === connection.peer)) {
-                players.push({ id: connection.peer, name: data.nickname, bet: 0, score: 0, status: 'IDLE', cards: [] });
+                players.push({ id: connection.peer, name: data.nickname, bet: 0, score: 0, budget: 0, status: 'IDLE', cards: [], isEliminated: false });
             }
             updatePlayerListUI();
             broadcast({ type: 'UPDATE_PLAYERS', players: players });
@@ -185,13 +186,12 @@ function setupHostConnection(connection) {
     });
 }
 
-// --- LOGICA DI GIOCO (BLACKJACK COERENTE CON L'ENGINE HOST) ---
+// --- LOGICA DI GIOCO ---
 
 function createBlackjackDeck() {
     const suits = ['♠', '♥', '♦', '♣'];
     const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
     let newDeck = [];
-    // Utilizziamo 4 mazzi regolamentari da casinò
     for (let m = 0; m < 4; m++) {
         for (let s of suits) {
             for (let r of ranks) {
@@ -199,7 +199,6 @@ function createBlackjackDeck() {
             }
         }
     }
-    // Mischia
     for (let i = newDeck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
@@ -227,14 +226,26 @@ function startGame() {
     if (!isHost) return;
     sessionStorage.removeItem('bj_host_room');
     
+    // Legge il valore del budget selezionato dall'Host (solo all'inizio della primissima mano)
+    if (roomStatus === 'LOBBY') {
+        initialBudget = parseInt(document.getElementById('select-initial-budget').value) || 100;
+        players.forEach(p => p.budget = initialBudget);
+    }
+    
     deck = createBlackjackDeck();
     roomStatus = 'BETTING';
+    
     players.forEach(p => {
         p.bet = 0;
         p.cards = [];
         p.score = 0;
-        p.status = 'PLAYING';
+        if (!p.isEliminated) {
+            p.status = 'PLAYING';
+        } else {
+            p.status = 'ELIMINATED';
+        }
     });
+    
     dealerCards = [];
     dealerScore = 0;
     
@@ -242,10 +253,27 @@ function startGame() {
     document.getElementById('table').style.display = 'block';
     document.getElementById('my-name-display').innerText = myNickname;
     
+    document.getElementById('host-budget-selection').style.display = 'none';
+    
     sendGameState();
 }
 
-function placeBet(amount) {
+function submitBet() {
+    const inputField = document.getElementById('input-bet-amount');
+    const amount = parseInt(inputField.value);
+    const me = players.find(p => p.id === myPeerId);
+    
+    if (isNaN(amount) || amount <= 0) {
+        alert("Inserisci una cifra intera valida maggiore di zero!");
+        return;
+    }
+    if (amount > me.budget) {
+        alert(`Non puoi puntare più di quanto possiedi! Il tuo budget è di ${me.budget}€.`);
+        return;
+    }
+    
+    inputField.value = ""; 
+    
     if (isHost) {
         handlePlaceBet(myPeerId, amount);
     } else {
@@ -255,27 +283,32 @@ function placeBet(amount) {
 
 function handlePlaceBet(playerId, amount) {
     let p = players.find(x => x.id === playerId);
-    if (p) p.bet = amount;
+    if (p && !p.isEliminated) p.bet = Math.floor(amount); 
     
-    // Se tutti hanno puntato, l'host distribuisce le prime carte
-    if (players.every(x => x.bet > 0)) {
+    const activePlayersToBet = players.filter(x => !x.isEliminated);
+    
+    if (activePlayersToBet.every(x => x.bet > 0)) {
         roomStatus = 'PLAYER_TURN';
         activePlayerIndex = 0;
         
-        // Distribuzione iniziale (2 carte a testa, 2 al banco di cui una coperta)
+        while (players[activePlayerIndex] && players[activePlayerIndex].isEliminated) {
+            activePlayerIndex++;
+        }
+        
         players.forEach(x => {
-            x.cards.push(deck.pop(), deck.pop());
-            x.score = calculateScore(x.cards);
-            if (x.score === 21) x.status = 'BLACKJACK';
+            if (!x.isEliminated) {
+                x.cards.push(deck.pop(), deck.pop());
+                x.score = calculateScore(x.cards);
+                if (x.score === 21) x.status = 'BLACKJACK';
+            }
         });
         
-        dealerCards.push(deck.pop()); // Scoperta
+        dealerCards.push(deck.pop());
         let closedCard = deck.pop();
-        closedCard.isClosed = true;   // Coperta
+        closedCard.isClosed = true;
         dealerCards.push(closedCard);
         dealerScore = calculateScore(dealerCards);
         
-        // Passa oltre se il primo giocatore ha già fatto Blackjack naturale
         checkNextTurnRequired();
     }
     sendGameState();
@@ -317,7 +350,10 @@ function handleStandAction() {
 }
 
 function checkNextTurnRequired() {
-    while (activePlayerIndex < players.length && (players[activePlayerIndex].status === 'BUST' || players[activePlayerIndex].status === 'BLACKJACK')) {
+    while (activePlayerIndex < players.length && 
+          (players[activePlayerIndex].isEliminated || 
+           players[activePlayerIndex].status === 'BUST' || 
+           players[activePlayerIndex].status === 'BLACKJACK')) {
         activePlayerIndex++;
     }
     if (activePlayerIndex >= players.length) {
@@ -335,10 +371,8 @@ function advanceTurn() {
     }
 }
 
-// INTEGRAZIONE BANCO AUTOMATICO (Regola del 17)
 function handleDealerTurn() {
     roomStatus = 'DEALER_TURN';
-    // Rivela la carta coperta
     dealerCards.forEach(c => c.isClosed = false);
     dealerScore = calculateScore(dealerCards);
     sendGameState();
@@ -361,27 +395,49 @@ function resolveRound() {
     let summary = "Risultati del Tavolo:\n\n";
     
     players.forEach(p => {
+        if (p.isEliminated) return;
+        
         if (p.status === 'BUST') {
-            summary += `${p.name}: Sballato (-${p.bet}€)\n`;
+            p.budget -= p.bet;
+            summary += `${p.name}: Sballato (-${p.bet}€) | Nuovo Totale: ${p.budget}€\n`;
         } else if (p.status === 'BLACKJACK' && dealerScore !== 21) {
-            summary += `${p.name}: Blackjack Naturale! (+${p.bet * 1.5}€)\n`;
+            const winAmount = Math.floor(p.bet * 1.5);
+            p.budget += winAmount;
+            summary += `${p.name}: Blackjack Naturale! (+${winAmount}€) | Nuovo Totale: ${p.budget}€\n`;
         } else if (dealerScore > 21) {
-            summary += `${p.name}: Vince! Il banco ha sballato (+${p.bet}€)\n`;
+            p.budget += p.bet;
+            summary += `${p.name}: Vince! Il banco ha sballato (+${p.bet}€) | Nuovo Totale: ${p.budget}€\n`;
         } else if (p.score > dealerScore) {
-            summary += `${p.name}: Vince contro il banco (+${p.bet}€)\n`;
+            p.budget += p.bet;
+            summary += `${p.name}: Vince contro il banco (+${p.bet}€) | Nuovo Totale: ${p.budget}€\n`;
         } else if (p.score < dealerScore) {
-            summary += `${p.name}: Perde contro il banco (-${p.bet}€)\n`;
+            p.budget -= p.bet;
+            summary += `${p.name}: Perde contro il banco (-${p.bet}€) | Nuovo Totale: ${p.budget}€\n`;
         } else {
-            summary += `${p.name}: Pareggio (Push) (0€)\n`;
+            summary += `${p.name}: Pareggio (Push) (0€) | Rimane: ${p.budget}€\n`;
+        }
+        
+        if (p.budget <= 0) {
+            p.budget = 0;
+            p.isEliminated = true;
+            summary += `⚠️ ${p.name} HA PERSO TUTTO ED È STATO ELIMINATO!\n`;
         }
     });
     
     sendGameState();
+    
     setTimeout(() => {
         alert(summary);
+        
+        const genericSurvivors = players.filter(p => !p.isEliminated);
+        if (genericSurvivors.length === 0) {
+            alert("Tutti i giocatori sono andati in bancarotta! Il tavolo si resetta completamente.");
+            location.reload();
+            return;
+        }
+        
         if (isHost) {
-            // Rilancia automaticamente la fase di scommessa dopo la chiusura
-            setTimeout(() => startGame(), 1000);
+            setTimeout(() => startGame(), 1500);
         }
     }, 500);
 }
@@ -400,7 +456,7 @@ function sendGameState() {
     broadcast({ type: 'UPDATE_STATE', ...state });
 }
 
-// --- RENDERIZZAZIONE E UI SINCRONIZZATA ---
+// --- RENDERIZZAZIONE E UI ---
 
 function updatePlayerListUI() {
     const list = document.getElementById('player-list');
@@ -428,48 +484,52 @@ function getCardHTML(card) {
 }
 
 function syncUI() {
-    // Sincronizzazione Schermate
     if (roomStatus === 'LOBBY') return;
     
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('table').style.display = 'block';
     
-    // Gestione visualizzazione betting box
     const me = players.find(p => p.id === myPeerId);
-    if (roomStatus === 'BETTING' && me && me.bet === 0) {
+    
+    if (roomStatus === 'BETTING' && me && me.bet === 0 && !me.isEliminated) {
         document.getElementById('betting-area').style.display = 'block';
+        document.getElementById('available-budget-display').innerText = me.budget;
     } else {
         document.getElementById('betting-area').style.display = 'none';
     }
 
-    // Render Carte Banco
     const dealerCardsDiv = document.getElementById('dealer-cards');
     dealerCardsDiv.innerHTML = "";
     dealerCards.forEach(c => dealerCardsDiv.innerHTML += getCardHTML(c));
     document.getElementById('dealer-score-display').innerText = 
         (roomStatus === 'PLAYER_TURN') ? "Punti: ?" : `Punti: ${dealerScore}`;
 
-    // Render Carte Personali
     if (me) {
         const myCardsDiv = document.getElementById('my-cards');
         myCardsDiv.innerHTML = "";
-        me.cards.forEach(c => myCardsDiv.innerHTML += getCardHTML(c));
-        document.getElementById('my-score-display').innerText = `Punti: ${me.score} | Puntata Virtuale: ${me.bet}€`;
+        
+        if (me.isEliminated) {
+            myCardsDiv.innerHTML = `<div style="color: #ff4d4d; font-weight: bold; font-size: 18px; padding: 10px;">HAI PERSO TUTTO E SEI FUORI DAL GIOCO</div>`;
+            document.getElementById('my-score-display').innerText = `Budget: 0€ (Eliminato)`;
+        } else {
+            me.cards.forEach(c => myCardsDiv.innerHTML += getCardHTML(c));
+            document.getElementById('my-score-display').innerText = `Punti: ${me.score} | Puntata Attuale: ${me.bet}€ | Il tuo Portafoglio: ${me.budget}€`;
+        }
     }
 
-    // Abilitazione controlli di turno
     const isMyTurn = (roomStatus === 'PLAYER_TURN' && players[activePlayerIndex]?.id === myPeerId);
-    document.getElementById('btn-hit').disabled = !isMyTurn || isProcessingAction;
-    document.getElementById('btn-stand').disabled = !isMyTurn || isProcessingAction;
+    document.getElementById('btn-hit').disabled = !isMyTurn || isProcessingAction || (me && me.isEliminated);
+    document.getElementById('btn-stand').disabled = !isMyTurn || isProcessingAction || (me && me.isEliminated);
 
-    // Gestione Turn Indicator barra di stato
     const indicator = document.getElementById('turn-indicator');
     if (roomStatus === 'BETTING') {
-        indicator.innerText = "Fase di puntata virtuale...";
+        indicator.innerText = "Fase di puntata virtuale... Inserisci la tua cifra.";
         indicator.style.backgroundColor = "#2e5c43";
+        indicator.style.color = "#fff";
     } else if (roomStatus === 'DEALER_TURN') {
         indicator.innerText = "Il Banco sta giocando...";
         indicator.style.backgroundColor = "#d2691e";
+        indicator.style.color = "#fff";
     } else if (isMyTurn) {
         indicator.innerText = "Tocca a te! Carta o Stai?";
         indicator.style.backgroundColor = "#ffd700";
@@ -481,22 +541,29 @@ function syncUI() {
         indicator.style.color = "#fff";
     }
 
-    // Render Avversari
     const opponentsContainer = document.getElementById('opponents-row');
     opponentsContainer.innerHTML = "";
     players.forEach(p => {
         if (p.id !== myPeerId) {
             const box = document.createElement('div');
-            box.className = `opponent-box ${p.status === 'BUST' ? 'opp-busted' : p.status === 'STAND' ? 'opp-banked' : ''}`;
+            box.className = `opponent-box ${p.isEliminated ? 'opp-busted' : p.status === 'STAND' ? 'opp-banked' : ''}`;
             
-            let cardsHTML = "";
-            p.cards.forEach(c => { cardsHTML += getCardHTML(c); });
-            
-            box.innerHTML = `
-                <h4>${p.name} (Punti: ${p.score})</h4>
-                <p style="font-size:12px; color:#ffd700; margin:4px 0;">Puntata: ${p.bet}€ | Stato: ${p.status}</p>
-                <div class="opponent-cards-row mini-cards">${cardsHTML}</div>
-            `;
+            let innerContent = "";
+            if (p.isEliminated) {
+                innerContent = `
+                    <h4>${p.name}</h4>
+                    <p style="color:#ff4d4d; font-weight:bold; margin:5px 0;">🔴 HA PERSO TUTTO</p>
+                `;
+            } else {
+                let cardsHTML = "";
+                p.cards.forEach(c => { cardsHTML += getCardHTML(c); });
+                innerContent = `
+                    <h4>${p.name} (Punti: ${p.score})</h4>
+                    <p style="font-size:12px; color:#ffd700; margin:4px 0;">Portafoglio: ${p.budget}€ | Puntata: ${p.bet}€</p>
+                    <div class="opponent-cards-row mini-cards">${cardsHTML}</div>
+                `;
+            }
+            box.innerHTML = innerContent;
             opponentsContainer.appendChild(box);
         }
     });
