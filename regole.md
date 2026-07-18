@@ -1,12 +1,12 @@
 # 🃏 Regolamento Ufficiale - Blackjack Multiplayer P2P
 
-Benvenuto al tavolo verde! Questo documento contiene le regole ufficiali e i flussi di gioco implementati all'interno dell'applicazione. Il gioco si basa sul Blackjack classico da casinò, adattato per una gestione interamente automatica del Banco e sessioni multiplayer in tempo reale tra amici.
+Benvenuto al tavolo verde! Questo documento contiene le regole ufficiali e i flussi di gioco implementati all'interno dell'applicazione. Il gioco si basa sul Blackjack classico da casinò, adattato per una gestione interamente automatica del Banco, sessioni multiplayer in tempo reale tra amici e un sistema di eliminazione a portafoglio.
 
 ---
 
 ## 1. Obiettivo del Gioco
 L'obiettivo di ogni giocatore è **battere il Banco**. Per farlo, devi ottenere un punteggio totale delle carte superiore a quello del Banco senza mai superare i **21 punti**. 
-* Se superi i 21 punti, hai **sballato (Bust)** e perdi immediatamente la tua puntata.
+* Se superi i 21 punti, hai **sballato (Bust)** e perdi immediatamente la tua puntata del round.
 
 ---
 
@@ -20,13 +20,14 @@ Il gioco utilizza 4 mazzi regolamentari da 52 carte ciascuno. Il valore di ogni 
 
 ## 3. Il Flusso di una Partita
 
-1. **Fase di Puntata (Betting):** All'inizio del round, ogni giocatore sceglie una puntata virtuale tra le tre opzioni disponibili: **10 €**, **100 €** o **1000 €** (soldi 100% fittizi).
-2. **Distribuzione Iniziale:** Quando tutti i partecipanti hanno puntato, l'Host distribuisce le carte:
+1. **Scelta del Budget (Lobby):** Prima di iniziare la partita, l'Host imposta il budget iniziale virtuale uguale per tutti i partecipanti (**10 €**, **100 €** o **1000 €**).
+2. **Fase di Puntata:** All'inizio di ogni mano, prima di vedere le carte, ogni giocatore inserisce liberamente la propria puntata utilizzando cifre intere, senza superare il proprio budget residuo.
+3. **Distribuzione Iniziale:** Quando tutti i partecipanti attivi hanno confermato la scommessa, vengono distribuite le carte:
    * **Giocatori:** Due carte scoperte a testa.
    * **Banco:** Una carta scoperta e una carta coperta (a faccia in giù).
-3. **Turno dei Giocatori:** A partire dal primo giocatore della lobby, ognuno gioca il proprio turno in modo sequenziale. Il turno finisce quando il giocatore decide di stare o sballa.
-4. **Turno del Banco:** Una volta che tutti i giocatori hanno concluso il proprio turno, il Banco gira la sua carta coperta e gioca seguendo regole algoritmiche rigide.
-5. **Risoluzione e Risultati:** Il sistema confronta i punteggi finali, assegna le vincite virtuali e riavvia automaticamente una nuova mano.
+4. **Turno dei Giocatori:** A partire dal primo giocatore della lobby, ognuno gioca il proprio turno in modo sequenziale. Il turno finisce quando il giocatore decide di stare o sballa.
+5. **Turno del Banco:** Una volta che i giocatori hanno concluso, il Banco gira la sua carta coperta e gioca seguendo regole algoritmiche rigide.
+6. **Risoluzione e Risultati:** Il sistema confronta i punteggi finali, aggiorna i budget individuali in tempo reale e mostra il resoconto a tutti i partecipanti.
 
 ---
 
@@ -44,9 +45,10 @@ Il Banco non prende decisioni strategiche umane. È un automa vincolato dalle re
 
 ---
 
-## 6. Determinazione dei Risultati e Vincite
+## 6. Determinazione dei Risultati, Vincite ed Eliminazione
 Al termine del turno del Banco, i risultati vengono calcolati per ogni singolo giocatore rimasto in gioco:
 * **Blackjack Naturale:** Se ricevi un Asso e una figura/10 come prime due carte, hai un Blackjack naturale. Se il banco non ha un Blackjack a sua volta, vinci subito con un pagamento di **3:2** (1.5 volte la puntata).
 * **Vittoria:** Il tuo punteggio è più alto di quello del Banco (senza aver superato 21), oppure tu sei in gioco e il Banco sballa. Guadagni il doppio della tua puntata virtuale (**1:1**).
-* **Sconfitta:** Sballi (superi 21) oppure il tuo punteggio è inferiore a quello del Banco. Perdi la puntata virtuale.
+* **Sconfitta:** Sballi (superi 21) oppure il tuo punteggio è inferiore a quello del Banco. Perdi la puntata virtuale calcolata.
 * **Pareggio (Push):** Tu e il Banco ottenete lo stesso identico punteggio. La puntata virtuale ti viene interamente restituita.
+* **⚠️ Eliminazione (Bancarotta):** Se il portafoglio di un giocatore scende a **0 €**, compare il messaggio *"Hai perso tutto"* e l'utente viene eliminato dal gioco, potendo solo assistere come spettatore ai round successivi. Se tutti i giocatori vanno in bancarotta, il tavolo si resetta completamente.

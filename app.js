@@ -16,6 +16,7 @@ let deck = [];
 let dealerCards = [];
 let dealerScore = 0;
 let isProcessingAction = false;
+let globalNotificationText = ""; // Messaggio sincronizzato per tutti i giocatori
 
 window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -48,7 +49,6 @@ function generateShortId() {
     return result;
 }
 
-// Inizializzazione Rete con i tuoi server STUN/TURN dedicati per sbloccare i Carrier mobili
 function initPeer(customId, callback) {
     if (peer) { try { peer.destroy(); } catch(e) {} }
 
@@ -154,6 +154,7 @@ function joinGame() {
                 dealerCards = data.dealerCards;
                 dealerScore = data.dealerScore;
                 isProcessingAction = data.isProcessingAction;
+                globalNotificationText = data.globalNotificationText;
                 syncUI();
             }
         });
@@ -226,7 +227,6 @@ function startGame() {
     if (!isHost) return;
     sessionStorage.removeItem('bj_host_room');
     
-    // Legge il valore del budget selezionato dall'Host (solo all'inizio della primissima mano)
     if (roomStatus === 'LOBBY') {
         initialBudget = parseInt(document.getElementById('select-initial-budget').value) || 100;
         players.forEach(p => p.budget = initialBudget);
@@ -234,6 +234,7 @@ function startGame() {
     
     deck = createBlackjackDeck();
     roomStatus = 'BETTING';
+    globalNotificationText = ""; // Reset messaggi all'inizio del round
     
     players.forEach(p => {
         p.bet = 0;
@@ -392,52 +393,54 @@ function handleDealerTurn() {
 
 function resolveRound() {
     roomStatus = 'ROUND_OVER';
-    let summary = "Risultati del Tavolo:\n\n";
+    let summary = "📜 RISULTATI DEL ROUND:<br>";
     
     players.forEach(p => {
         if (p.isEliminated) return;
         
         if (p.status === 'BUST') {
             p.budget -= p.bet;
-            summary += `${p.name}: Sballato (-${p.bet}€) | Nuovo Totale: ${p.budget}€\n`;
+            summary += `❌ <b>${p.name}</b>: Sballato (-${p.bet}€) | Bilancio: ${p.budget}€<br>`;
         } else if (p.status === 'BLACKJACK' && dealerScore !== 21) {
             const winAmount = Math.floor(p.bet * 1.5);
             p.budget += winAmount;
-            summary += `${p.name}: Blackjack Naturale! (+${winAmount}€) | Nuovo Totale: ${p.budget}€\n`;
+            summary += `✨ <b>${p.name}</b>: Blackjack Naturale! (+${winAmount}€) | Bilancio: ${p.budget}€<br>`;
         } else if (dealerScore > 21) {
             p.budget += p.bet;
-            summary += `${p.name}: Vince! Il banco ha sballato (+${p.bet}€) | Nuovo Totale: ${p.budget}€\n`;
+            summary += `💰 <b>${p.name}</b>: Vince! Il banco ha sballato (+${p.bet}€) | Bilancio: ${p.budget}€<br>`;
         } else if (p.score > dealerScore) {
             p.budget += p.bet;
-            summary += `${p.name}: Vince contro il banco (+${p.bet}€) | Nuovo Totale: ${p.budget}€\n`;
+            summary += `✅ <b>${p.name}</b>: Vince contro il banco (+${p.bet}€) | Bilancio: ${p.budget}€<br>`;
         } else if (p.score < dealerScore) {
             p.budget -= p.bet;
-            summary += `${p.name}: Perde contro il banco (-${p.bet}€) | Nuovo Totale: ${p.budget}€\n`;
+            summary += `📉 <b>${p.name}</b>: Perde contro il banco (-${p.bet}€) | Bilancio: ${p.budget}€<br>`;
         } else {
-            summary += `${p.name}: Pareggio (Push) (0€) | Rimane: ${p.budget}€\n`;
+            summary += `🤝 <b>${p.name}</b>: Pareggio (Push) (0€) | Bilancio: ${p.budget}€<br>`;
         }
         
         if (p.budget <= 0) {
             p.budget = 0;
             p.isEliminated = true;
-            summary += `⚠️ ${p.name} HA PERSO TUTTO ED È STATO ELIMINATO!\n`;
+            summary += `⚠️ <b>${p.name} HA PERSO TUTTO ED È STATO ELIMINATO!</b><br>`;
         }
     });
     
+    globalNotificationText = summary; // Carica il riepilogo nella notifica di tutti i giocatori
     sendGameState();
     
     setTimeout(() => {
-        alert(summary);
-        
         const genericSurvivors = players.filter(p => !p.isEliminated);
         if (genericSurvivors.length === 0) {
-            alert("Tutti i giocatori sono andati in bancarotta! Il tavolo si resetta completamente.");
-            location.reload();
+            globalNotificationText = "💥 TUTTI I GIOCATORI SONO IN BANCAROTTA! Reset totale tra 5 secondi...";
+            sendGameState();
+            setTimeout(() => {
+                location.reload();
+            }, 5000);
             return;
         }
         
         if (isHost) {
-            setTimeout(() => startGame(), 1500);
+            setTimeout(() => startGame(), 6000); // 6 secondi di tempo per leggere i risultati sincronizzati
         }
     }, 500);
 }
@@ -450,7 +453,8 @@ function sendGameState() {
         activePlayerIndex: activePlayerIndex,
         dealerCards: dealerCards,
         dealerScore: dealerScore,
-        isProcessingAction: isProcessingAction
+        isProcessingAction: isProcessingAction,
+        globalNotificationText: globalNotificationText
     };
     syncUI();
     broadcast({ type: 'UPDATE_STATE', ...state });
@@ -489,6 +493,15 @@ function syncUI() {
     document.getElementById('lobby').style.display = 'none';
     document.getElementById('table').style.display = 'block';
     
+    // Gestione notifica globale visibile a tutti
+    const notifBanner = document.getElementById('global-notification');
+    if (globalNotificationText && globalNotificationText.trim() !== "") {
+        notifBanner.innerHTML = globalNotificationText;
+        notifBanner.style.display = 'block';
+    } else {
+        notifBanner.style.display = 'none';
+    }
+
     const me = players.find(p => p.id === myPeerId);
     
     if (roomStatus === 'BETTING' && me && me.bet === 0 && !me.isEliminated) {

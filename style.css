@@ -25,6 +25,21 @@ h1 {
     box-shadow: 0 8px 32px rgba(0,0,0,0.6);
 }
 
+/* Banner Notifiche Sincronizzato */
+.notification-banner {
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 25px;
+    text-align: center;
+    color: #fff;
+    font-size: 15px;
+    line-height: 1.6;
+    animation: fadeIn 0.4s ease-in-out;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+}
+
 /* Modulo di Scommessa */
 .betting-box {
     background: rgba(0,0,0,0.4);
@@ -166,3 +181,8 @@ button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
 }
 .mini-cards .card-value { font-size: 16px; }
 .mini-cards .card-corner { font-size: 9px; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

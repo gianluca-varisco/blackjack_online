@@ -18,15 +18,19 @@ Questa applicazione ti permette di ricreare l'atmosfera di un vero casinò ovunq
 ### Come sfidare i tuoi amici in 3 passi:
 1. **Apri il gioco** e clicca su **"Crea Nuovo Tavolo (Host)"**.
 2. **Copia il link di invito** che compare sullo schermo e invialo ai tuoi amici (ad esempio su WhatsApp).
-3. **I tuoi amici cliccano sul link**, inseriscono il proprio nome e si siedono automaticamente al tuo stesso tavolo. Quando siete pronti, l'organizzatore può dare il via alla partita!
+3. **I tuoi amici cliccano sul link**, inseriscono il proprio nome e si siedono automaticamente al tuo stesso tavolo. 
+
+L'Host potrà selezionare il Budget Iniziale del tavolo (10 €, 100 € o 1000 €) prima di dare il via alla partita!
 
 ---
 
 ## 🎲 Le Regole in Breve
 
+* **Fase di Puntata:** Le fiches sono virtuali e i soldi completamente finti. Prima di ricevere le carte, devi inserire una puntata libera in cifre intere che non superi il tuo portafoglio attuale.
 * **Il tuo obiettivo:** Batti il Banco! Per farlo devi ottenere un punteggio più alto del suo, ma senza mai superare i **21 punti**. Se superi 21, hai "sballato" e perdi la mano.
-* **Le fiches sono virtuali:** All'inizio di ogni mano puoi scegliere quanto puntare (10 €, 100 € o 1000 €). Si tratta di soldi completamente finti e gratuiti, pensati solo per il divertimento e la competizione tra amici.
-* **Il Banco è automatico:** Non c'è un giocatore umano a fare il mazziere. Il Banco è gestito dal computer e segue le regole ufficiali dei casinò: distribuisce le carte e si ferma obbligatoriamente non appena raggiunge o supera i 17 punti.
 * **Le tue mosse:** Durante il tuo turno puoi chiedere **"Carta"** per provare ad avvicinarti a 21, oppure decidere di **"Stare"** se il punteggio ti soddisfa e vuoi passare la mano.
+* **Il Banco è automatico:** È gestito dal computer e segue le regole ufficiali dei casinò: si ferma obbligatoriamente non appena raggiunge o supera i 17 punti.
+* **Sincronizzazione Totale:** Nessun pop-up fastidioso interromperà il gioco. I risultati del tavolo e le eliminazioni vengono mostrati contemporaneamente sul banner in cima allo schermo di tutti i giocatori connessi.
+* **Bancarotta ed Eliminazione:** Se il tuo portafoglio arriva a zero euro, compare la notifica di eliminazione. Sarai escluso dai round successivi e potrai solo guardare le giocate dei tuoi amici rimasti in gara.
 
 Buon divertimento e che la fortuna sia con te! 💰
