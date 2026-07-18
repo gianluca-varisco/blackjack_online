@@ -1,0 +1,159 @@
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: #0f2b1d;
+    color: white;
+    margin: 0;
+    padding: 15px;
+}
+
+#game-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+h1 {
+    text-align: center;
+    color: #ffd700;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.panel {
+    background: rgba(14, 43, 29, 0.85);
+    padding: 20px;
+    border-radius: 16px;
+    border: 3px solid #ffd700;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+/* Modulo di Scommessa */
+.betting-box {
+    background: rgba(0,0,0,0.4);
+    padding: 15px;
+    text-align: center;
+    border-radius: 8px;
+    margin: 15px 0;
+    border: 1px dashed #ffd700;
+}
+.bet-buttons button {
+    margin: 5px;
+    background-color: #ffd700;
+    color: black;
+    font-size: 16px;
+}
+
+button {
+    background-color: #e0b600;
+    color: #1a3a2a;
+    border: none;
+    padding: 10px 20px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+button:hover:not(:disabled) { background-color: #fff; transform: scale(1.03); }
+button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
+
+#turn-indicator {
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+/* Griglia e Struttura Casino */
+.play-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dealer-area, .personal-area {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 15px;
+    border-radius: 12px;
+    position: relative;
+}
+
+.score-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0,0,0,0.6);
+    padding: 4px 10px;
+    border-radius: 6px;
+    color: #ffd700;
+    font-family: monospace;
+}
+
+.table-divider {
+    border: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #ffd700, transparent);
+    margin: 10px 0;
+}
+
+/* Rappresentazione Visiva delle Carte */
+.card-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-height: 110px;
+    margin-top: 10px;
+}
+
+.card {
+    width: 72px;
+    height: 108px;
+    background-color: white;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 6px;
+    box-sizing: border-box;
+    font-weight: bold;
+    box-shadow: 3px 3px 8px rgba(0,0,0,0.5);
+    position: relative;
+}
+
+.card.red { color: #d63031; }
+.card.black { color: #2d3436; }
+.card-back {
+    background: radial-gradient(#b22222, #8b0000);
+    color: white !important;
+    border: 3px solid white;
+    justify-content: center;
+    align-items: center;
+    font-size: 28px;
+}
+
+.card-corner { font-size: 12px; }
+.card-corner.bottom { transform: rotate(180deg); }
+.card-value { font-size: 24px; text-align: center; }
+
+/* Configurazione Pannello Avversari */
+.opponents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+.opponent-box {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 10px;
+}
+.opp-busted { border-color: #d63031; background: rgba(214, 48, 49, 0.1); }
+.opp-banked { border-color: #0984e3; background: rgba(9, 132, 227, 0.1); }
+
+/* Ridimensionamento automatico carte avversari */
+.mini-cards .card {
+    width: 45px;
+    height: 68px;
+    padding: 3px;
+}
+.mini-cards .card-value { font-size: 16px; }
+.mini-cards .card-corner { font-size: 9px; }

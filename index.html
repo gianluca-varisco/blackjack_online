@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack Multiplayer P2P</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- PeerJS per connessione diretta in tempo reale senza server dedicati -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <h1>♣️ Blackjack Casino P2P ♥️</h1>
+        
+        <!-- Schermata di Connessione (Lobby) -->
+        <div id="lobby" class="panel">
+            <h2>Lobby di Ingresso</h2>
+            <div class="lobby-controls">
+                <div class="control-group">
+                    <button id="btn-host" onclick="startHost()">Crea Nuovo Tavolo (Host)</button>
+                    <p id="host-id-display" class="highlight-text"></p>
+                    <button id="btn-copy-link" style="display:none;" onclick="copyInviteLink()">🔗 Copia Link di Invito</button>
+                </div>
+                <div class="divider" id="lobby-divider">oppure</div>
+                <div class="control-group" id="join-group">
+                    <input type="text" id="join-id" placeholder="Inserisci ID Tavolo">
+                    <button id="btn-join" onclick="joinGame()">Siediti al Tavolo</button>
+                </div>
+            </div>
+            
+            <div id="player-list-container" style="display:none; margin-top: 20px;">
+                <h3>Giocatori al Tavolo:</h3>
+                <ul id="player-list"></ul>
+                <button id="btn-start-game" style="display:none;" onclick="startGame()">Inizia Partita</button>
+            </div>
+        </div>
+
+        <!-- Tavolo da Gioco -->
+        <div id="table" class="panel" style="display: none;">
+            <div id="turn-indicator">In attesa dell'Host...</div>
+            
+            <div class="game-layout">
+                <!-- Area Principale del Panno Verde -->
+                <div class="play-area">
+                    
+                    <!-- AREA DEL BANCO -->
+                    <div class="dealer-area">
+                        <h3>BANCO</h3>
+                        <div id="dealer-score-display" class="score-badge">Punti: --</div>
+                        <div id="dealer-cards" class="card-row"></div>
+                    </div>
+                    
+                    <hr class="table-divider">
+
+                    <!-- AREA DI FASE PUNTATA (VIRTUAL BETTING) -->
+                    <div id="betting-area" class="betting-box" style="display: none;">
+                        <h3>Scegli la tua Puntata Virtuale:</h3>
+                        <div class="bet-buttons">
+                            <button onclick="placeBet(10)">10 €</button>
+                            <button onclick="placeBet(100)">100 €</button>
+                            <button onclick="placeBet(1000)">1000 €</button>
+                        </div>
+                    </div>
+
+                    <!-- AREA DEL GIOCATORE LOCALE (TU) -->
+                    <div class="personal-area">
+                        <h3>Il Tuo Spazio (<span id="my-name-display"></span>)</h3>
+                        <div id="my-score-display" class="score-badge">Punti: 0 | Puntata: --</div>
+                        
+                        <div class="deck-area">
+                            <button id="btn-hit" onclick="playerHit()" disabled>CARTA (HIT)</button>
+                            <button id="btn-stand" onclick="playerStand()" disabled>STAI (STAND)</button>
+                        </div>
+                        
+                        <div id="my-cards" class="card-row"></div>
+                    </div>
+
+                    <!-- ALTRI GIOCATORI CONNESSI -->
+                    <div class="opponents-container">
+                        <h3>Altri Giocatori al Tavolo</h3>
+                        <div id="opponents-row" class="opponents-grid"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
